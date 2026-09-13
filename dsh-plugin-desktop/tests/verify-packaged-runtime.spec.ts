@@ -30,6 +30,7 @@ import {
   REQUIRED_POSIX_FS_EXT_ENTRIES,
   REQUIRED_UNPACKED_RUNTIME_ENTRIES,
   REQUIRED_WINDOWS_X64_NODE_PTY_ENTRIES,
+  resolvePackagedApplicationRoot,
   resolvePackagedAsarPath,
   resolvePackagedExecutablePath,
   resolvePackagedUnpackedRoot,
@@ -315,6 +316,33 @@ describe('packaged desktop runtime verification', () => {
     expect(resolvePackagedExecutablePath(runtimeContext)).toBe(expectedExecutable)
     expect(readHeader).toHaveBeenCalledWith(expectedPath)
     expect(listUnpacked).toHaveBeenCalledWith(`${expectedPath}.unpacked`)
+  })
+
+  it('verifies every required entry from the plain Windows application directory', () => {
+    const base = context('/build', 'win32', 1)
+    const runtimeContext: PackagedRuntimeContext = {
+      ...base,
+      packager: {
+        ...base.packager,
+        platformSpecificBuildOptions: { asar: false },
+      },
+    }
+    const appRoot = resolvePackagedApplicationRoot(runtimeContext)
+    const paths = [...new Set([
+      ...REQUIRED_PACKAGED_RUNTIME_ENTRIES,
+      ...DESKTOP_RUNTIME_ENTRIES,
+      ...requiredPhysicalEntries(runtimeContext),
+    ])]
+    const files = paths.map(path => ({ path, bytes: 1 }))
+    const readHeader = vi.fn<ArchiveHeaderReader>(headerReader([]))
+
+    expect(() => verifyPackagedRuntime(
+      runtimeContext,
+      readHeader,
+      filename => paths.includes(relative(appRoot, filename).replaceAll('\\', '/')),
+      () => files,
+    )).not.toThrow()
+    expect(readHeader).not.toHaveBeenCalled()
   })
 
   it('uses LinuxPackager executableName instead of appInfo.productFilename', () => {

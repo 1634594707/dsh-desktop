@@ -12,6 +12,7 @@ import { join } from 'node:path'
 import {
   resolvePackagedExecutablePath,
   smokePackagedElectronRuntime,
+  usesAsarLayout,
   type PackagedElectronSmoke,
   type PackagedRuntimeContext,
 } from './verify-packaged-runtime.ts'
@@ -35,6 +36,7 @@ export interface ElectronArtifactBuildResult {
 }
 
 interface ElectronPlatformOutputConfiguration {
+  readonly asar?: boolean | null
   readonly defaultArch?: string | null
   readonly executableName?: string | null
   readonly target?: ElectronTargetConfiguration | string
@@ -61,8 +63,12 @@ const REQUIRED_ELECTRON_FUSES = [
     option: FuseV1Options.EnableEmbeddedAsarIntegrityValidation,
     name: 'EnableEmbeddedAsarIntegrityValidation',
   },
-  { option: FuseV1Options.OnlyLoadAppFromAsar, name: 'OnlyLoadAppFromAsar' },
 ] as const
+
+const ASAR_ONLY_ELECTRON_FUSE = {
+  option: FuseV1Options.OnlyLoadAppFromAsar,
+  name: 'OnlyLoadAppFromAsar',
+} as const
 
 function fuseStateName(state: FuseState | undefined): string {
   return state === undefined ? 'MISSING' : (FuseState[state] ?? String(state))
@@ -72,6 +78,7 @@ function fuseStateName(state: FuseState | undefined): string {
 export async function verifyElectronExecutableFuses(
   executable: string,
   read: ElectronFuseReader = getCurrentFuseWire,
+  requiresAsar = true,
 ): Promise<void> {
   let wire: FuseConfig<FuseState>
   try {
@@ -81,7 +88,10 @@ export async function verifyElectronExecutableFuses(
       cause,
     })
   }
-  const invalid = REQUIRED_ELECTRON_FUSES.flatMap(({ option, name }) => {
+  const requiredFuses = requiresAsar
+    ? [...REQUIRED_ELECTRON_FUSES, ASAR_ONLY_ELECTRON_FUSE]
+    : REQUIRED_ELECTRON_FUSES
+  const invalid = requiredFuses.flatMap(({ option, name }) => {
     const state = wire[option]
     return state === FuseState.ENABLE ? [] : [`${name}=${fuseStateName(state)}`]
   })
@@ -279,6 +289,9 @@ export function resolveFinalPackagedRuntimeContexts(
         arch,
         electronPlatformName: platformName(key),
         packager: {
+          ...(result.configuration[key]?.asar === undefined
+            ? {}
+            : { platformSpecificBuildOptions: { asar: result.configuration[key]?.asar } }),
           ...(key === 'linux'
           ? {
               executableName: result.configuration.linux?.executableName
@@ -313,7 +326,11 @@ export async function afterAllArtifactBuild(
 ): Promise<string[]> {
   const contexts = resolveFinalPackagedRuntimeContexts(result, exists)
   for (const context of contexts) {
-    await verifyElectronExecutableFuses(resolvePackagedExecutablePath(context), read)
+    await verifyElectronExecutableFuses(
+      resolvePackagedExecutablePath(context),
+      read,
+      usesAsarLayout(context),
+    )
     smoke(context)
   }
   return []

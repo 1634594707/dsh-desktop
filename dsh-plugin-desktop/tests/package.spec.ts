@@ -47,7 +47,7 @@ const manifest = JSON.parse(readFileSync(new URL('package.json', packageRoot), '
       target?: unknown
       x64ArchFiles?: unknown
     }
-    win?: { icon?: unknown; asarUnpack?: unknown; target?: unknown; artifactName?: unknown }
+    win?: { asar?: unknown; compression?: unknown; icon?: unknown; asarUnpack?: unknown; target?: unknown; artifactName?: unknown }
     nsis?: Record<string, unknown>
     portable?: Record<string, unknown>
     linux?: { icon?: unknown; asarUnpack?: unknown }
@@ -780,6 +780,8 @@ describe('published package surface', () => {
       'build/tray-icon-blue@2x.png',
     ]
     expect(manifest.build?.win?.asarUnpack).toEqual([...windowsAndLinuxIcons, 'node_modules/@agents-anywhere/dsh-bridge-next/lib/bundled-connector/**'])
+    expect(manifest.build?.win?.asar).toBe(false)
+    expect(manifest.build?.win?.compression).toBe('normal')
     expect(manifest.build?.linux?.asarUnpack).toEqual([...windowsAndLinuxIcons, 'node_modules/@agents-anywhere/dsh-bridge-next/lib/bundled-connector/**'])
     expect(manifest.build?.electronFuses).toEqual({
       enableEmbeddedAsarIntegrityValidation: true,
