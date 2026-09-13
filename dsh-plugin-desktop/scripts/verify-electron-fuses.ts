@@ -24,6 +24,7 @@ export type ElectronFuseReader = (executable: string) => Promise<FuseConfig<Fuse
 export interface ElectronArtifactBuildResult {
   readonly outDir: string
   readonly configuration: {
+    readonly asar?: boolean | object | null
     readonly productName?: string | null
     readonly executableName?: string | null
     readonly linux?: ElectronPlatformOutputConfiguration | null
@@ -88,12 +89,12 @@ export async function verifyElectronExecutableFuses(
       cause,
     })
   }
-  const requiredFuses = requiresAsar
-    ? [...REQUIRED_ELECTRON_FUSES, ASAR_ONLY_ELECTRON_FUSE]
-    : REQUIRED_ELECTRON_FUSES
+  const requiredFuses = [...REQUIRED_ELECTRON_FUSES, ASAR_ONLY_ELECTRON_FUSE]
   const invalid = requiredFuses.flatMap(({ option, name }) => {
     const state = wire[option]
-    return state === FuseState.ENABLE ? [] : [`${name}=${fuseStateName(state)}`]
+    const expected = option === FuseV1Options.RunAsNode || requiresAsar
+      ? FuseState.ENABLE : FuseState.DISABLE
+    return state === expected ? [] : [`${name}=${fuseStateName(state)}`]
   })
   if (invalid.length > 0) {
     throw new Error(
@@ -289,9 +290,11 @@ export function resolveFinalPackagedRuntimeContexts(
         arch,
         electronPlatformName: platformName(key),
         packager: {
-          ...(result.configuration[key]?.asar === undefined
+          ...((result.configuration[key]?.asar ?? result.configuration.asar) === undefined
             ? {}
-            : { platformSpecificBuildOptions: { asar: result.configuration[key]?.asar } }),
+            : { platformSpecificBuildOptions: {
+                asar: (result.configuration[key]?.asar ?? result.configuration.asar) !== false,
+              } }),
           ...(key === 'linux'
           ? {
               executableName: result.configuration.linux?.executableName

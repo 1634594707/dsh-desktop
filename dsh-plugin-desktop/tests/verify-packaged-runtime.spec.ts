@@ -318,31 +318,24 @@ describe('packaged desktop runtime verification', () => {
     expect(listUnpacked).toHaveBeenCalledWith(`${expectedPath}.unpacked`)
   })
 
-  it('verifies every required entry from the plain Windows application directory', () => {
-    const base = context('/build', 'win32', 1)
+  it.each(['win32', 'darwin', 'linux'] as const)('verifies a plain %s app and refuses an accidental ASAR entry', platform => {
+    const base = context('/build', platform, 1)
     const runtimeContext: PackagedRuntimeContext = {
-      ...base,
-      packager: {
-        ...base.packager,
-        platformSpecificBuildOptions: { asar: false },
-      },
+      ...base, packager: { ...base.packager, platformSpecificBuildOptions: { asar: false } },
     }
     const appRoot = resolvePackagedApplicationRoot(runtimeContext)
     const paths = [...new Set([
-      ...REQUIRED_PACKAGED_RUNTIME_ENTRIES,
-      ...DESKTOP_RUNTIME_ENTRIES,
+      ...REQUIRED_PACKAGED_RUNTIME_ENTRIES, ...DESKTOP_RUNTIME_ENTRIES,
       ...requiredPhysicalEntries(runtimeContext),
     ])]
     const files = paths.map(path => ({ path, bytes: 1 }))
     const readHeader = vi.fn<ArchiveHeaderReader>(headerReader([]))
-
-    expect(() => verifyPackagedRuntime(
-      runtimeContext,
-      readHeader,
-      filename => paths.includes(relative(appRoot, filename).replaceAll('\\', '/')),
-      () => files,
-    )).not.toThrow()
+    const exists = (filename: string) => paths.includes(relative(appRoot, filename).replaceAll('\\', '/'))
+    expect(() => verifyPackagedRuntime(runtimeContext, readHeader, exists, () => files)).not.toThrow()
     expect(readHeader).not.toHaveBeenCalled()
+    expect(() => verifyPackagedRuntime(runtimeContext, readHeader,
+      filename => filename === resolvePackagedAsarPath(runtimeContext) || exists(filename),
+      () => files)).toThrow('unexpectedly contains app.asar')
   })
 
   it('uses LinuxPackager executableName instead of appInfo.productFilename', () => {

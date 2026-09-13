@@ -48,7 +48,7 @@ const manifest = JSON.parse(readFileSync(new URL('package.json', packageRoot), '
       target?: unknown
       x64ArchFiles?: unknown
     }
-    win?: { icon?: unknown; asarUnpack?: unknown; target?: unknown; artifactName?: unknown }
+    win?: { compression?: unknown; icon?: unknown; asarUnpack?: unknown; target?: unknown; artifactName?: unknown }
     nsis?: Record<string, unknown>
     portable?: Record<string, unknown>
     linux?: { icon?: unknown; asarUnpack?: unknown }
@@ -849,26 +849,15 @@ describe('published package surface', () => {
     expect(manifest.bin).not.toHaveProperty('dsh-plugin-desktop')
     expect(manifest.build?.productName).toBe('DSH Desktop Beta')
     expect(manifest.build?.appId).toBe('ai.deepseek.dsh.desktop.beta')
-    expect(manifest.build?.asar).toEqual({ smartUnpack: true })
+    expect(manifest.build?.asar).toBe(false)
     expect(manifest.build).not.toHaveProperty('asarUnpack')
-    expect(manifest.build?.mac?.asarUnpack).toEqual([
-      'build/app-icon-mac.png',
-      'build/tray-iconTemplate.png',
-      'build/tray-iconTemplate@2x.png',
-      'node_modules/@agents-anywhere/dsh-bridge-next/lib/bundled-connector/**',
-    ])
-    const windowsAndLinuxIcons = [
-      'build/app-icon.png',
-      'build/tray-icon-blue.png',
-      'build/tray-icon-blue@1.25x.png',
-      'build/tray-icon-blue@1.5x.png',
-      'build/tray-icon-blue@2x.png',
-    ]
-    expect(manifest.build?.win?.asarUnpack).toEqual([...windowsAndLinuxIcons, 'node_modules/@agents-anywhere/dsh-bridge-next/lib/bundled-connector/**'])
-    expect(manifest.build?.linux?.asarUnpack).toEqual([...windowsAndLinuxIcons, 'node_modules/@agents-anywhere/dsh-bridge-next/lib/bundled-connector/**'])
+    for (const platform of ['mac', 'win', 'linux'] as const) {
+      expect(manifest.build?.[platform]).toMatchObject({ asar: false })
+      expect(manifest.build?.[platform]).not.toHaveProperty('asarUnpack')
+    }
     expect(manifest.build?.electronFuses).toEqual({
-      enableEmbeddedAsarIntegrityValidation: true,
-      onlyLoadAppFromAsar: true,
+      enableEmbeddedAsarIntegrityValidation: false,
+      onlyLoadAppFromAsar: false,
       resetAdHocDarwinSignature: true,
       runAsNode: true,
     })
@@ -895,6 +884,7 @@ describe('published package surface', () => {
     expect(manifest.build?.mac?.artifactName).toBe('DSH-Desktop-Beta-${version}-${arch}.${ext}')
     expect(manifest.build?.mac?.mergeASARs).toBe(false)
     expect(manifest.build?.mac?.signIgnore).toEqual(['\\.(?:pak|dat|wasm)$'])
+    expect(manifest.build?.win?.compression).toBe('normal')
     expect(manifest.build?.win?.icon).toBe('build/app-icon.png')
     expect(manifest.build?.win?.target).toEqual([{
       target: 'nsis',
