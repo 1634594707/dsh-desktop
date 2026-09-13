@@ -12,7 +12,8 @@ import {
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { verifyBundledSkills } from './packaged-filesystem-smoke.ts'
 import { rgPath } from '@vscode/ripgrep'
 import AdmZip from 'adm-zip'
 import { exportDiagnosticsZip } from './diagnostic-export.ts'
@@ -225,6 +226,7 @@ try {
   rmSync(root, { recursive: true, force: true })
 }
 
+await verifyBundledSkills(fileURLToPath(new URL('./', installAnchor)))
 await smokeSessionMigration()
 await smokeDiagnosticExportWorker()
 

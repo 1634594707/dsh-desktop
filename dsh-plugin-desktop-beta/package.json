@@ -329,15 +329,13 @@
   "build": {
     "appId": "ai.deepseek.dsh.desktop.beta",
     "productName": "DSH Desktop Beta",
-    "asar": {
-      "smartUnpack": true
-    },
+    "asar": false,
     "npmRebuild": false,
     "afterPack": "./scripts/verify-packaged-runtime.ts",
     "afterAllArtifactBuild": "./scripts/verify-electron-fuses.ts",
     "electronFuses": {
-      "enableEmbeddedAsarIntegrityValidation": true,
-      "onlyLoadAppFromAsar": true,
+      "enableEmbeddedAsarIntegrityValidation": false,
+      "onlyLoadAppFromAsar": false,
       "resetAdHocDarwinSignature": true,
       "runAsNode": true
     },
@@ -360,12 +358,6 @@
       "!node_modules/fs-ext/build/**"
     ],
     "mac": {
-      "asarUnpack": [
-        "build/app-icon-mac.png",
-        "build/tray-iconTemplate.png",
-        "build/tray-iconTemplate@2x.png",
-        "node_modules/@agents-anywhere/dsh-bridge-next/lib/bundled-connector/**"
-      ],
       "artifactName": "DSH-Desktop-Beta-${version}-${arch}.${ext}",
       "target": [
         "dir"
@@ -386,17 +378,10 @@
       "signIgnore": [
         "\\.(?:pak|dat|wasm)$"
       ],
-      "x64ArchFiles": "**/node_modules/{@deepseek-ai/node-addon-system-darwin-*/**,node-pty/prebuilds/darwin-*/**,fs-ext/prebuilds/darwin-*/**,node-addon-require-builtin-darwin-*/**,@vscode/ripgrep-darwin-*/**,@img/sharp-darwin-*/**,@img/sharp-libvips-darwin-*/**,@koromix/koffi-darwin-*/**}"
+      "x64ArchFiles": "**/node_modules/{@deepseek-ai/node-addon-system-darwin-*/**,node-pty/prebuilds/darwin-*/**,fs-ext/prebuilds/darwin-*/**,node-addon-require-builtin-darwin-*/**,@vscode/ripgrep-darwin-*/**,@img/sharp-darwin-*/**,@img/sharp-libvips-darwin-*/**,@koromix/koffi-darwin-*/**}",
+      "asar": false
     },
     "win": {
-      "asarUnpack": [
-        "build/app-icon.png",
-        "build/tray-icon-blue.png",
-        "build/tray-icon-blue@1.25x.png",
-        "build/tray-icon-blue@1.5x.png",
-        "build/tray-icon-blue@2x.png",
-        "node_modules/@agents-anywhere/dsh-bridge-next/lib/bundled-connector/**"
-      ],
       "target": [
         {
           "target": "nsis",
@@ -406,7 +391,8 @@
         }
       ],
       "artifactName": "DSH-Desktop-Beta-${version}-${arch}-Portable.${ext}",
-      "icon": "build/app-icon.png"
+      "icon": "build/app-icon.png",
+      "asar": false
     },
     "nsis": {
       "include": "installer.nsh",
@@ -423,18 +409,11 @@
       "artifactName": "DSH-Desktop-Beta-${version}-${arch}-Setup.${ext}"
     },
     "linux": {
-      "asarUnpack": [
-        "build/app-icon.png",
-        "build/tray-icon-blue.png",
-        "build/tray-icon-blue@1.25x.png",
-        "build/tray-icon-blue@1.5x.png",
-        "build/tray-icon-blue@2x.png",
-        "node_modules/@agents-anywhere/dsh-bridge-next/lib/bundled-connector/**"
-      ],
       "target": [
         "dir"
       ],
-      "icon": "build/app-icon.png"
+      "icon": "build/app-icon.png",
+      "asar": false
     }
   }
 }

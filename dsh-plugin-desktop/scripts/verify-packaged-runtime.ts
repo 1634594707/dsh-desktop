@@ -782,6 +782,9 @@ export function verifyPackagedRuntime(
     )
   }
   const hasAsar = usesAsarLayout(context)
+  if (!hasAsar && exists(resolvePackagedAsarPath(context))) {
+    throw new Error('ASAR-disabled package unexpectedly contains app.asar')
+  }
   if (context.electronPlatformName === 'win32' && context.arch !== undefined && context.arch !== 1) {
     throw new Error(
       `dsh-plugin-desktop: unsupported Windows package architecture ${String(context.arch)}; only x64 is configured`,
