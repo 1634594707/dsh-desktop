@@ -382,6 +382,7 @@
       "asar": false
     },
     "win": {
+      "compression": "normal",
       "target": [
         {
           "target": "nsis",
