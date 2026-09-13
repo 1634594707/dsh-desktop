@@ -165,7 +165,7 @@ describe('final Electron fuse verification', () => {
     expect(() => resolveFinalPackagedRuntimeContexts(
       result([{ key: 'win', archs: [Arch.x64, Arch.arm64] }]),
       filename => filename === x64Executable,
-    )).toThrow('win/arm64 at /build/win-arm64-unpacked/DSH Desktop.exe')
+    )).toThrow(`win/arm64 at ${join('/build', 'win-arm64-unpacked', 'DSH Desktop.exe')}`)
   })
 
   it('resolves a real target-name map through the target archs retained by NSIS', () => {
@@ -259,6 +259,15 @@ describe('final Electron fuse verification', () => {
 
     await expect(verifyElectronExecutableFuses('/build/DSH Desktop.exe', read))
       .rejects.toThrow(`${name}=DISABLE`)
+  })
+
+  it('allows a plain-directory package to disable OnlyLoadAppFromAsar', async () => {
+    const read: ElectronFuseReader = async () => fuseWire({
+      [FuseV1Options.OnlyLoadAppFromAsar]: FuseState.DISABLE,
+    })
+
+    await expect(verifyElectronExecutableFuses('/build/DSH Desktop.exe', read, false))
+      .resolves.toBeUndefined()
   })
 
   it('wraps an unreadable final executable with its resolved path', async () => {
