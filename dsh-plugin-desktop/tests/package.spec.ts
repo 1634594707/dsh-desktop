@@ -293,8 +293,10 @@ describe('published package surface', () => {
       expect(selector).toMatch(/@npm:\^?0\.1\.5-rc\.2$/u)
       expect(String(resolution)).toContain(runtimeVersion)
     }
+    // Derived from the beta manifest, not hardcoded: a channel bump moves this
+    // assertion with the pin instead of failing a release that is already correct.
     for (const [selector, resolution] of betaResolutions) {
-      expect(selector).toMatch(/@npm:\^?0\.1\.6-alpha\.1$/u)
+      expect([betaRuntimeVersion, `^${betaRuntimeVersion}`]).toContain(selector.split('@npm:')[1])
       expect(String(resolution)).toContain(betaRuntimeVersion)
     }
   })
@@ -764,7 +766,7 @@ describe('published package surface', () => {
 
   it('fixes the installed application identity', () => {
     expect(workspaceManifest.version).toBeUndefined()
-    expect(manifest.version).toBe('2.0.11')
+    expect(manifest.version).toBe('2.0.12')
     expect(manifest.build?.productName).toBe('DSH Desktop')
     expect(manifest.build?.appId).toBe('ai.deepseek.dsh.desktop')
     expect(manifest.build?.asar).toBe(false)
